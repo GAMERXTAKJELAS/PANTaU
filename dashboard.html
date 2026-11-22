@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PANTaU — Dashboard</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- Sidebar (desktop) / bottom bar (phone) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <svg class="brand__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>
+          <polyline points="6.5 12 9.5 12 11 9 13 15 14.5 12 17.5 12"/>
+        </svg>
+        <span class="brand__name">PANTaU</span>
+      </div>
+
+      <nav class="nav" aria-label="Main menu">
+        <button type="button" class="nav__item is-active" data-view="dashboard" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button type="button" class="nav__item" data-view="history">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          <span>History</span>
+        </button>
+        <button type="button" class="nav__item nav__item--logout" id="logoutBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Log out</span>
+        </button>
+      </nav>
+
+      <p class="sidebar__foot">PANTaU v1.0.0</p>
+    </aside>
+
+    <main class="main">
+      <div class="mobile-brand">
+        <svg class="brand__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>
+          <polyline points="6.5 12 9.5 12 11 9 13 15 14.5 12 17.5 12"/>
+        </svg>
+        <span>PANTaU</span>
+      </div>
+
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSub">Record a new reading and see your latest values.</p>
+        </div>
+      </header>
+
+      <div id="alertArea" aria-live="polite"></div>
+
+      <!-- DASHBOARD VIEW -->
+      <section id="view-dashboard" class="view">
+        <div class="two-col">
+
+          <!-- New reading form -->
+          <div class="card">
+            <h2 class="card__title">New reading</h2>
+            <div id="formAlert" aria-live="polite"></div>
+            <form id="readingForm" class="form" novalidate>
+
+              <div class="group" role="group" aria-labelledby="bpTitle">
+                <h3 class="group__title" id="bpTitle">Blood pressure monitor</h3>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="systolic">Systolic (mmHg)</label>
+                    <input class="input" id="systolic" type="number" inputmode="numeric" step="1" aria-describedby="systolic-error">
+                    <p class="field__error" id="systolic-error" hidden></p>
+                  </div>
+                  <div class="field">
+                    <label for="diastolic">Diastolic (mmHg)</label>
+                    <input class="input" id="diastolic" type="number" inputmode="numeric" step="1" aria-describedby="diastolic-error">
+                    <p class="field__error" id="diastolic-error" hidden></p>
+                  </div>
+                  <div class="field">
+                    <label for="bpBpm">BPM (bpm)</label>
+                    <input class="input" id="bpBpm" type="number" inputmode="numeric" step="1" aria-describedby="bpBpm-error">
+                    <p class="field__error" id="bpBpm-error" hidden></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="group" role="group" aria-labelledby="oxiTitle">
+                <h3 class="group__title" id="oxiTitle">Finger clip oximeter</h3>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="spo2">SpO₂ (%)</label>
+                    <input class="input" id="spo2" type="number" inputmode="numeric" step="1" aria-describedby="spo2-error">
+                    <p class="field__error" id="spo2-error" hidden></p>
+                  </div>
+                  <div class="field">
+                    <label for="oxiBpm">Pulse (bpm)</label>
+                    <input class="input" id="oxiBpm" type="number" inputmode="numeric" step="1" aria-describedby="oxiBpm-error">
+                    <p class="field__error" id="oxiBpm-error" hidden></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="group" role="group" aria-labelledby="noteTitle">
+                <h3 class="group__title" id="noteTitle">Note (optional)</h3>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="noteSelect">Choose a note</label>
+                    <select class="input" id="noteSelect">
+                      <option value="">No note</option>
+                      <option>Before eating</option>
+                      <option>After eating</option>
+                      <option>Sleeping</option>
+                      <option>Woke up early morning</option>
+                      <option>Lying down</option>
+                      <option>Sitting</option>
+                      <option value="__other">Other (type your own)</option>
+                    </select>
+                  </div>
+                  <div class="field" id="noteOtherField" hidden>
+                    <label for="noteOther">Your note</label>
+                    <input class="input" id="noteOther" type="text" maxlength="100" aria-describedby="noteOther-error">
+                    <p class="field__error" id="noteOther-error" hidden></p>
+                  </div>
+                </div>
+              </div>
+
+              <p class="hint">The date and time are saved automatically (Malaysia time).</p>
+
+              <div class="actions">
+                <button type="submit" class="btn btn--primary" id="saveBtn">Save Reading</button>
+                <button type="button" class="btn btn--outline" id="clearBtn">Clear Form</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Patient + latest reading -->
+          <div class="col">
+            <div class="card">
+              <h2 class="card__title">Patient</h2>
+              <dl class="patient">
+                <div class="kv"><dt>Name</dt><dd id="ptName">—</dd></div>
+                <div class="kv"><dt>IC number</dt><dd id="ptIc">—</dd></div>
+                <div class="kv"><dt>Age</dt><dd id="ptAge">—</dd></div>
+                <div class="kv"><dt>Gender</dt><dd id="ptGender">—</dd></div>
+              </dl>
+            </div>
+
+            <div class="card">
+              <h2 class="card__title">Latest reading</h2>
+              <p class="empty" id="latestEmpty">Loading…</p>
+              <div id="latestWrap" hidden>
+                <div class="stats">
+                  <div class="stat"><p class="stat__label">Blood pressure</p><p class="stat__value"><span id="latBp">—</span><span class="stat__unit">mmHg</span></p></div>
+                  <div class="stat"><p class="stat__label">BPM (BP monitor)</p><p class="stat__value"><span id="latBpBpm">—</span><span class="stat__unit">bpm</span></p></div>
+                  <div class="stat"><p class="stat__label">SpO₂</p><p class="stat__value"><span id="latSpo2">—</span><span class="stat__unit">%</span></p></div>
+                  <div class="stat"><p class="stat__label">Pulse (oximeter)</p><p class="stat__value"><span id="latOxi">—</span><span class="stat__unit">bpm</span></p></div>
+                </div>
+                <p class="hint" id="latMeta"></p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- HISTORY VIEW -->
+      <section id="view-history" class="view" hidden>
+        <div class="card">
+
+          <!-- Only shown when printing / saving as PDF -->
+          <div class="print-only print-header">
+            <h2>PANTaU — Pemantauan Aktiviti Nadi dan TekAnan dalam Unit</h2>
+            <div class="print-meta">
+              <span>Name: <strong id="printName"></strong></span>
+              <span>IC number: <strong id="printIc"></strong></span>
+              <span>Age / Gender: <strong id="printAgeGender"></strong></span>
+              <span>Printed: <strong id="printDate"></strong></span>
+            </div>
+          </div>
+
+          <div class="card__head no-print">
+            <h2 class="card__title">All readings <span class="hint" id="historyCount"></span></h2>
+            <button type="button" class="btn btn--outline" id="printBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print / Export PDF
+            </button>
+          </div>
+
+          <p class="empty" id="historyEmpty">Loading readings…</p>
+
+          <div class="table-wrap" id="tableWrap" hidden>
+            <table id="readingsTable">
+              <thead>
+                <tr>
+                  <th class="num">No.</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th class="num">Systolic (mmHg)</th>
+                  <th class="num">Diastolic (mmHg)</th>
+                  <th class="num">BPM (BP monitor)</th>
+                  <th class="num">SpO₂ (%)</th>
+                  <th class="num">Pulse (oximeter)</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody id="readingsBody"></tbody>
+            </table>
+          </div>
+          <p class="hint table-note">Times are shown in Malaysia time (UTC+8).</p>
+        </div>
+      </section>
+
+      <noscript><p class="hint">Please turn on JavaScript to use PANTaU.</p></noscript>
+    </main>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

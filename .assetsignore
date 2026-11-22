@@ -1,0 +1,10 @@
+cloudflare_worker.js
+wrangler.json
+schema.sql
+README.md
+.assetsignore
+.gitignore
+.dev.vars
+node_modules
+.wrangler
+.git

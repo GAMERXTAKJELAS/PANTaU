@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PANTaU — Offline</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <main class="auth">
+    <div class="auth-card center">
+      <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="1" y1="1" x2="23" y2="23"/>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+        <line x1="12" y1="20" x2="12.01" y2="20"/>
+      </svg>
+      <div class="brand">
+        <div>
+          <div class="brand__name">PANTaU</div>
+          <p class="tagline">Pemantauan Aktiviti Nadi dan TekAnan dalam Unit</p>
+        </div>
+      </div>
+      <div class="stack-sm">
+        <h1>You are offline</h1>
+        <p class="hint">PANTaU cannot connect to the internet. Please check your connection, then press Retry.</p>
+        <div id="retryMsg" aria-live="polite" hidden></div>
+        <button type="button" class="btn btn--primary btn--block" id="retryBtn">Retry</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+      var allowed = { index: 'index.html', dashboard: 'dashboard.html' };
+      var from = (new URLSearchParams(location.search).get('from') || '').replace(/\.html$/, '');
+      var target = Object.prototype.hasOwnProperty.call(allowed, from) ? allowed[from] : 'index.html';
+      var btn = document.getElementById('retryBtn');
+      var msg = document.getElementById('retryMsg');
+
+      btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        btn.textContent = 'Checking…';
+        msg.hidden = true;
+        try {
+          var res = await fetch(target, { cache: 'no-store' });
+          if (res.ok) { location.href = target; return; }
+          throw new Error('not ok');
+        } catch (e) {
+          msg.hidden = false;
+          msg.className = 'alert alert--danger';
+          msg.textContent = 'Still cannot connect. Please check your internet connection and try again.';
+        }
+        btn.disabled = false;
+        btn.textContent = 'Retry';
+      });
+
+      window.addEventListener('online', function () { location.href = target; });
+    })();
+  </script>
+</body>
+</html>
