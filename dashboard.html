@@ -34,7 +34,7 @@
         </button>
       </nav>
 
-      <p class="sidebar__foot">PANTaU v1.0.0</p>
+      <p class="sidebar__foot">PANTaU v1.1.0</p>
     </aside>
 
     <main class="main">
@@ -49,7 +49,7 @@
       <header class="topbar">
         <div>
           <h1 id="pageTitle">Dashboard</h1>
-          <p id="pageSub">Record a new reading and see your latest values.</p>
+          <p id="pageSub">Add a new reading and see your latest values.</p>
         </div>
       </header>
 
@@ -57,52 +57,39 @@
 
       <!-- DASHBOARD VIEW -->
       <section id="view-dashboard" class="view">
+
+        <!-- Shown when a reading was saved for now on this device but not submitted yet -->
+        <div class="banner" id="draftBanner" hidden>
+          <p id="draftText">You have an unfinished reading saved on this device.</p>
+          <div class="actions">
+            <button type="button" class="btn btn--primary btn--small" id="draftContinue">Continue</button>
+            <button type="button" class="btn btn--outline btn--small" id="draftDiscard">Discard</button>
+          </div>
+        </div>
+
         <div class="two-col">
 
-          <!-- New reading form -->
+          <!-- New reading -->
           <div class="card">
-            <h2 class="card__title">New reading</h2>
+            <div class="card__head">
+              <h2 class="card__title">New reading</h2>
+              <button type="button" class="btn btn--primary" id="addDeviceBtn" aria-expanded="false" aria-controls="deviceMenu">+ Add Reading</button>
+            </div>
+
+            <div class="device-menu" id="deviceMenu" role="group" aria-label="Choose a device" hidden>
+              <button type="button" class="device-option" data-device-option="oximeter"><strong>Oximeter</strong><span>SpO₂ and pulse</span></button>
+              <button type="button" class="device-option" data-device-option="bp"><strong>Blood Pressure Monitor</strong><span>Systolic, diastolic, BPM</span></button>
+              <button type="button" class="device-option" data-device-option="glucose"><strong>Blood Glucose Monitor</strong><span>mmol/L or mg/dL</span></button>
+            </div>
+
             <div id="formAlert" aria-live="polite"></div>
+
             <form id="readingForm" class="form" novalidate>
+              <p class="empty" id="devicesEmpty">Press “+ Add Reading” and choose a device.</p>
 
-              <div class="group" role="group" aria-labelledby="bpTitle">
-                <h3 class="group__title" id="bpTitle">Blood pressure monitor</h3>
-                <div class="form-grid">
-                  <div class="field">
-                    <label for="systolic">Systolic (mmHg)</label>
-                    <input class="input" id="systolic" type="number" inputmode="numeric" step="1" aria-describedby="systolic-error">
-                    <p class="field__error" id="systolic-error" hidden></p>
-                  </div>
-                  <div class="field">
-                    <label for="diastolic">Diastolic (mmHg)</label>
-                    <input class="input" id="diastolic" type="number" inputmode="numeric" step="1" aria-describedby="diastolic-error">
-                    <p class="field__error" id="diastolic-error" hidden></p>
-                  </div>
-                  <div class="field">
-                    <label for="bpBpm">BPM (bpm)</label>
-                    <input class="input" id="bpBpm" type="number" inputmode="numeric" step="1" aria-describedby="bpBpm-error">
-                    <p class="field__error" id="bpBpm-error" hidden></p>
-                  </div>
-                </div>
-              </div>
+              <div id="devices" class="form"></div>
 
-              <div class="group" role="group" aria-labelledby="oxiTitle">
-                <h3 class="group__title" id="oxiTitle">Finger clip oximeter</h3>
-                <div class="form-grid">
-                  <div class="field">
-                    <label for="spo2">SpO₂ (%)</label>
-                    <input class="input" id="spo2" type="number" inputmode="numeric" step="1" aria-describedby="spo2-error">
-                    <p class="field__error" id="spo2-error" hidden></p>
-                  </div>
-                  <div class="field">
-                    <label for="oxiBpm">Pulse (bpm)</label>
-                    <input class="input" id="oxiBpm" type="number" inputmode="numeric" step="1" aria-describedby="oxiBpm-error">
-                    <p class="field__error" id="oxiBpm-error" hidden></p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="group" role="group" aria-labelledby="noteTitle">
+              <div class="group" id="noteGroup" role="group" aria-labelledby="noteTitle" hidden>
                 <h3 class="group__title" id="noteTitle">Note (optional)</h3>
                 <div class="form-grid">
                   <div class="field">
@@ -111,10 +98,14 @@
                       <option value="">No note</option>
                       <option>Before eating</option>
                       <option>After eating</option>
+                      <option>Fasting</option>
                       <option>Sleeping</option>
                       <option>Woke up early morning</option>
                       <option>Lying down</option>
                       <option>Sitting</option>
+                      <option>Relaxing</option>
+                      <option>Walking</option>
+                      <option>Running</option>
                       <option value="__other">Other (type your own)</option>
                     </select>
                   </div>
@@ -126,16 +117,16 @@
                 </div>
               </div>
 
-              <p class="hint">The date and time are saved automatically (Malaysia time).</p>
+              <p class="hint" id="timeHint" hidden>“Save for now” keeps a reading on this device only. Press Submit to send everything to the database. The date and time are recorded automatically (Malaysia time).</p>
 
-              <div class="actions">
-                <button type="submit" class="btn btn--primary" id="saveBtn">Save Reading</button>
+              <div class="actions" id="formActions" hidden>
+                <button type="submit" class="btn btn--primary" id="saveBtn">Submit</button>
                 <button type="button" class="btn btn--outline" id="clearBtn">Clear Form</button>
               </div>
             </form>
           </div>
 
-          <!-- Patient + latest reading -->
+          <!-- Patient + latest readings -->
           <div class="col">
             <div class="card">
               <h2 class="card__title">Patient</h2>
@@ -148,17 +139,32 @@
             </div>
 
             <div class="card">
-              <h2 class="card__title">Latest reading</h2>
-              <p class="empty" id="latestEmpty">Loading…</p>
-              <div id="latestWrap" hidden>
-                <div class="stats">
-                  <div class="stat"><p class="stat__label">Blood pressure</p><p class="stat__value"><span id="latBp">—</span><span class="stat__unit">mmHg</span></p></div>
-                  <div class="stat"><p class="stat__label">BPM (BP monitor)</p><p class="stat__value"><span id="latBpBpm">—</span><span class="stat__unit">bpm</span></p></div>
-                  <div class="stat"><p class="stat__label">SpO₂</p><p class="stat__value"><span id="latSpo2">—</span><span class="stat__unit">%</span></p></div>
-                  <div class="stat"><p class="stat__label">Pulse (oximeter)</p><p class="stat__value"><span id="latOxi">—</span><span class="stat__unit">bpm</span></p></div>
-                </div>
-                <p class="hint" id="latMeta"></p>
+              <div class="card__head">
+                <h2 class="card__title">Latest readings</h2>
+                <button type="button" class="btn btn--outline btn--small js-refresh">Refresh</button>
               </div>
+              <p class="empty" id="latestEmpty">Loading…</p>
+              <div class="stats" id="latestWrap" hidden>
+                <div class="stat">
+                  <p class="stat__label">Blood pressure</p>
+                  <p class="stat__value"><span id="latBp">—</span><span class="stat__unit">mmHg</span></p>
+                  <p class="stat__sub" id="latBpSub"></p>
+                  <p class="stat__sub" id="latBpSub2" hidden></p>
+                  <p class="stat__time" id="latBpTime"></p>
+                </div>
+                <div class="stat">
+                  <p class="stat__label">Oximeter SpO₂</p>
+                  <p class="stat__value"><span id="latSpo2">—</span><span class="stat__unit">%</span></p>
+                  <p class="stat__sub" id="latSpo2Sub"></p>
+                  <p class="stat__time" id="latSpo2Time"></p>
+                </div>
+                <div class="stat">
+                  <p class="stat__label">Blood glucose</p>
+                  <p class="stat__value"><span id="latGlu">—</span><span class="stat__unit" id="latGluUnit"></span></p>
+                  <p class="stat__time" id="latGluTime"></p>
+                </div>
+              </div>
+              <p class="hint" id="latUpdated"></p>
             </div>
           </div>
 
@@ -182,39 +188,153 @@
 
           <div class="card__head no-print">
             <h2 class="card__title">All readings <span class="hint" id="historyCount"></span></h2>
-            <button type="button" class="btn btn--outline" id="printBtn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-              Print / Export PDF
-            </button>
+            <div class="actions">
+              <button type="button" class="btn btn--outline btn--small js-refresh">Refresh</button>
+              <button type="button" class="btn btn--outline btn--small" id="printBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Print / Export PDF
+              </button>
+            </div>
           </div>
 
           <p class="empty" id="historyEmpty">Loading readings…</p>
 
-          <div class="table-wrap" id="tableWrap" hidden>
+          <!-- Table: computer and print -->
+          <div class="table-wrap history-table" id="tableWrap" hidden>
             <table id="readingsTable">
               <thead>
                 <tr>
                   <th class="num">No.</th>
                   <th>Date</th>
                   <th>Time</th>
-                  <th class="num">Systolic (mmHg)</th>
-                  <th class="num">Diastolic (mmHg)</th>
-                  <th class="num">BPM (BP monitor)</th>
-                  <th class="num">SpO₂ (%)</th>
-                  <th class="num">Pulse (oximeter)</th>
+                  <th class="num">BP Reading 1<small>sys/dia · BPM</small></th>
+                  <th class="num">BP Reading 2<small>sys/dia · BPM</small></th>
+                  <th class="num">SpO₂<small>%</small></th>
+                  <th class="num">Pulse<small>bpm</small></th>
+                  <th class="num">Glucose</th>
                   <th>Note</th>
                 </tr>
               </thead>
               <tbody id="readingsBody"></tbody>
             </table>
           </div>
-          <p class="hint table-note">Times are shown in Malaysia time (UTC+8).</p>
+
+          <!-- Cards: phone -->
+          <div class="history-cards" id="historyCards" hidden></div>
+
+          <p class="hint table-note">Times are shown in Malaysia time (UTC+8). Blood pressure is in mmHg.</p>
         </div>
       </section>
 
       <noscript><p class="hint">Please turn on JavaScript to use PANTaU.</p></noscript>
     </main>
   </div>
+
+  <!-- Device forms (copied into the page when the user picks a device) -->
+  <template id="tpl-oximeter">
+    <div class="group device-card" data-device="oximeter" role="group" aria-labelledby="oxiTitle">
+      <div class="device-card__head">
+        <h3 class="group__title" id="oxiTitle">Oximeter</h3>
+        <button type="button" class="link-btn" data-remove="oximeter">Remove</button>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="spo2">SpO₂ (%)</label>
+          <input class="input" id="spo2" type="text" inputmode="numeric" maxlength="3" data-digits aria-describedby="spo2-error">
+          <p class="field__error" id="spo2-error" hidden></p>
+        </div>
+        <div class="field">
+          <label for="oxiBpm">Oximeter BPM (bpm)</label>
+          <input class="input" id="oxiBpm" type="text" inputmode="numeric" maxlength="3" data-digits aria-describedby="oxiBpm-error">
+          <p class="field__error" id="oxiBpm-error" hidden></p>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn--outline" data-save="oximeter">Save for now</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-bp">
+    <div class="group device-card" data-device="bp" role="group" aria-labelledby="bpTitle">
+      <div class="device-card__head">
+        <h3 class="group__title" id="bpTitle">Blood Pressure Monitor</h3>
+        <button type="button" class="link-btn" data-remove="bp">Remove</button>
+      </div>
+      <p class="hint">Sit quietly first. Take Reading 1 and press Save for now. Wait 1 minute, then take Reading 2 (optional).</p>
+
+      <h4 class="subtitle">Reading 1</h4>
+      <div class="form-grid">
+        <div class="field">
+          <label for="bp1Sys">Systolic (mmHg)</label>
+          <input class="input" id="bp1Sys" type="text" inputmode="numeric" maxlength="3" data-digits aria-describedby="bp1Sys-error">
+          <p class="field__error" id="bp1Sys-error" hidden></p>
+        </div>
+        <div class="field">
+          <label for="bp1Dia">Diastolic (mmHg)</label>
+          <input class="input" id="bp1Dia" type="text" inputmode="numeric" maxlength="3" data-digits aria-describedby="bp1Dia-error">
+          <p class="field__error" id="bp1Dia-error" hidden></p>
+        </div>
+        <div class="field">
+          <label for="bp1Bpm">BPM (bpm)</label>
+          <input class="input" id="bp1Bpm" type="text" inputmode="numeric" maxlength="3" data-digits aria-describedby="bp1Bpm-error">
+          <p class="field__error" id="bp1Bpm-error" hidden></p>
+        </div>
+      </div>
+
+      <div class="timer" id="bpTimer"></div>
+
+      <h4 class="subtitle">Reading 2 (optional)</h4>
+      <div class="form-grid">
+        <div class="field">
+          <label for="bp2Sys">Systolic (mmHg)</label>
+          <input class="input" id="bp2Sys" type="text" inputmode="numeric" maxlength="3" data-digits aria-describedby="bp2Sys-error">
+          <p class="field__error" id="bp2Sys-error" hidden></p>
+        </div>
+        <div class="field">
+          <label for="bp2Dia">Diastolic (mmHg)</label>
+          <input class="input" id="bp2Dia" type="text" inputmode="numeric" maxlength="3" data-digits aria-describedby="bp2Dia-error">
+          <p class="field__error" id="bp2Dia-error" hidden></p>
+        </div>
+        <div class="field">
+          <label for="bp2Bpm">BPM (bpm)</label>
+          <input class="input" id="bp2Bpm" type="text" inputmode="numeric" maxlength="3" data-digits aria-describedby="bp2Bpm-error">
+          <p class="field__error" id="bp2Bpm-error" hidden></p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn--outline" data-save="bp">Save for now</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-glucose">
+    <div class="group device-card" data-device="glucose" role="group" aria-labelledby="gluTitle">
+      <div class="device-card__head">
+        <h3 class="group__title" id="gluTitle">Blood Glucose Monitor</h3>
+        <button type="button" class="link-btn" data-remove="glucose">Remove</button>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="glucoseValue">Glucose level</label>
+          <input class="input" id="glucoseValue" type="text" inputmode="decimal" maxlength="5" data-decimal aria-describedby="glucoseValue-error glucoseHint">
+          <p class="field__error" id="glucoseValue-error" hidden></p>
+        </div>
+        <div class="field">
+          <label for="glucoseUnit">Unit</label>
+          <select class="input" id="glucoseUnit">
+            <option value="mmol/L" selected>mmol/L</option>
+            <option value="mg/dL">mg/dL</option>
+          </select>
+        </div>
+      </div>
+      <p class="hint" id="glucoseHint">Most meters in Malaysia show mmol/L, for example 5.6.</p>
+      <div class="actions">
+        <button type="button" class="btn btn--outline" data-save="glucose">Save for now</button>
+      </div>
+    </div>
+  </template>
 
   <script src="common.js"></script>
   <script src="dashboard.js"></script>

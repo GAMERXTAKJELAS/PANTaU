@@ -251,12 +251,41 @@ button, input, select { font: inherit; color: inherit; }
 .kv dt { font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
 .kv dd { font-weight: 700; overflow-wrap: anywhere; }
 
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.9rem; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.9rem; }
 .stat { padding: 0.85rem 1rem; background: var(--cffy-theme-surface-a0); border-left: 4px solid var(--cffy-theme-primary-a20); border-radius: 12px; }
 .stat__label { font-size: 0.8rem; color: var(--text-muted); }
 .stat__value { font-size: 1.6rem; font-weight: 800; line-height: 1.25; }
 .stat__unit { margin-left: 0.25rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
 #latMeta { margin-top: 0.75rem; }
+
+/* ---------- Devices, saved-for-now banner, history cards ---------- */
+.btn--small { min-height: 36px; padding: 0.35rem 0.8rem; font-size: 0.9rem; }
+.link-btn { padding: 0.25rem 0.4rem; border: 0; background: transparent; color: var(--link); font-weight: 700; text-decoration: underline; cursor: pointer; }
+.device-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
+.device-option { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.75rem 0.9rem; text-align: left; background: var(--cffy-theme-surface-a0); border: 1px solid var(--cffy-theme-primary-a20); border-radius: 12px; cursor: pointer; }
+.device-option span { font-size: 0.82rem; color: var(--text-muted); }
+.device-option:hover:not(:disabled) { background: var(--cffy-theme-surface-tonal-a10); }
+.device-option:disabled { opacity: 0.5; border-color: var(--cffy-theme-surface-a40); cursor: not-allowed; }
+.device-card__head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.device-card__head .group__title { margin-bottom: 0; }
+.device-card .hint { margin-bottom: 0.25rem; }
+.device-card .actions { margin-top: 0.9rem; }
+.subtitle { margin: 0.9rem 0 0.5rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.timer { margin-top: 0.9rem; padding: 0.6rem 0.8rem; border-radius: 10px; background: var(--cffy-theme-info-a20); font-weight: 600; }
+.timer--ready { background: var(--cffy-theme-success-a0); }
+.banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1.25rem; padding: 0.9rem 1rem; background: var(--cffy-theme-warning-a20); border-radius: var(--radius-sm); }
+.banner p { flex: 1 1 260px; font-weight: 600; }
+.stat__sub { font-size: 0.88rem; font-weight: 600; }
+.stat__time { margin-top: 0.25rem; font-size: 0.78rem; color: var(--text-muted); }
+.history-cards { display: none; }
+.entry-card { padding: 0.9rem 1rem; background: var(--cffy-theme-surface-a0); border: 1px solid var(--cffy-theme-surface-a30); border-radius: 12px; }
+.entry-card__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 0.75rem; margin-bottom: 0.6rem; }
+.entry-card__head span { font-weight: 600; color: var(--text-muted); }
+.entry-card dl { display: grid; gap: 0.4rem; }
+.entry-card dt { font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.entry-card dd { font-weight: 700; }
+.entry-card .tag { margin-top: 0.6rem; }
+th small { display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
 
 /* ---------- Table ---------- */
 .table-wrap { overflow-x: auto; background: var(--cffy-theme-surface-a0); border: 1px solid var(--cffy-theme-surface-a30); border-radius: 12px; }
@@ -275,7 +304,7 @@ td.note { white-space: normal; min-width: 150px; }
 .print-only { display: none; }
 
 @media print {
-  @page { margin: 14mm; }
+  @page { size: A4 landscape; margin: 12mm; }
   body { background: #fff; color: #000; font-size: 11pt; }
   .sidebar, .topbar, .mobile-brand, .no-print, #view-dashboard, #alertArea { display: none !important; }
   .app { display: block; }
@@ -292,6 +321,10 @@ td.note { white-space: normal; min-width: 150px; }
   thead th { background: #e9f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   tbody tr:nth-child(even) { background: #fff; }
   tr { break-inside: avoid; }
+  /* Same table layout on every device */
+  .history-cards { display: none !important; }
+  .history-table { display: block !important; }
+  th small { color: #000; }
   .tag { padding: 0; background: none; font-weight: 400; }
 }
 
@@ -334,4 +367,6 @@ td.note { white-space: normal; min-width: 150px; }
   .mobile-brand .brand__logo { width: 30px; height: 30px; }
   .topbar h1 { font-size: 1.35rem; }
   .actions .btn { flex: 1; }
+  .history-table { display: none; }
+  .history-cards { display: grid; gap: 0.75rem; }
 }

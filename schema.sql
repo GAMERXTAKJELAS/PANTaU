@@ -28,18 +28,43 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 
--- Readings: blood pressure monitor + finger clip oximeter.
--- created_at is filled in automatically by the database.
+-- Readings: one row per submission. Every user's rows are separated by user_id.
+-- A device that was not used stays NULL. At least one device is required.
+--   Blood pressure monitor: reading 1 (required if used) and reading 2 (optional)
+--   Finger clip oximeter:   spo2 + pulse
+--   Blood glucose monitor:  value + unit
+-- measured_at = when the first reading was taken/saved (shown on the website)
+-- created_at  = when the row was submitted to the database
 CREATE TABLE IF NOT EXISTS readings (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  systolic     INTEGER NOT NULL CHECK (systolic     BETWEEN 50 AND 300),
-  diastolic    INTEGER NOT NULL CHECK (diastolic    BETWEEN 30 AND 200),
-  bp_bpm       INTEGER NOT NULL CHECK (bp_bpm       BETWEEN 20 AND 250),  -- BPM from the BP monitor
-  spo2         INTEGER NOT NULL CHECK (spo2         BETWEEN 50 AND 100),
-  oximeter_bpm INTEGER NOT NULL CHECK (oximeter_bpm BETWEEN 20 AND 250),  -- pulse from the oximeter
-  note         TEXT    CHECK (note IS NULL OR length(note) <= 100),
-  created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+  bp1_systolic  INTEGER CHECK (bp1_systolic  BETWEEN 50 AND 300),
+  bp1_diastolic INTEGER CHECK (bp1_diastolic BETWEEN 30 AND 200),
+  bp1_bpm       INTEGER CHECK (bp1_bpm       BETWEEN 20 AND 250),
+  bp2_systolic  INTEGER CHECK (bp2_systolic  BETWEEN 50 AND 300),
+  bp2_diastolic INTEGER CHECK (bp2_diastolic BETWEEN 30 AND 200),
+  bp2_bpm       INTEGER CHECK (bp2_bpm       BETWEEN 20 AND 250),
+
+  spo2          INTEGER CHECK (spo2          BETWEEN 50 AND 100),
+  oximeter_bpm  INTEGER CHECK (oximeter_bpm  BETWEEN 20 AND 250),
+
+  glucose_value REAL,
+  glucose_unit  TEXT    CHECK (glucose_unit IN ('mmol/L', 'mg/dL')),
+
+  note          TEXT    CHECK (note IS NULL OR length(note) <= 100),
+  measured_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+
+  CHECK ((bp1_systolic IS NULL) = (bp1_diastolic IS NULL) AND (bp1_systolic IS NULL) = (bp1_bpm IS NULL)),
+  CHECK ((bp2_systolic IS NULL) = (bp2_diastolic IS NULL) AND (bp2_systolic IS NULL) = (bp2_bpm IS NULL)),
+  CHECK (bp2_systolic IS NULL OR bp1_systolic IS NOT NULL),
+  CHECK ((spo2 IS NULL) = (oximeter_bpm IS NULL)),
+  CHECK ((glucose_value IS NULL) = (glucose_unit IS NULL)),
+  CHECK (glucose_value IS NULL
+         OR (glucose_unit = 'mmol/L' AND glucose_value BETWEEN 1 AND 40)
+         OR (glucose_unit = 'mg/dL'  AND glucose_value BETWEEN 20 AND 720)),
+  CHECK (bp1_systolic IS NOT NULL OR spo2 IS NOT NULL OR glucose_value IS NOT NULL)
 );
 
-CREATE INDEX IF NOT EXISTS idx_readings_user_time ON readings(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_readings_user_time ON readings(user_id, measured_at DESC);

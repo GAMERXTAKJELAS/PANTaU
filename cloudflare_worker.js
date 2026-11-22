@@ -8,14 +8,12 @@ const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 const DUMMY_SALT = '00'.repeat(16);
 
-// Same limits as the form on the dashboard.
-const READING_FIELDS = [
-  { key: 'systolic', min: 50, max: 300 },
-  { key: 'diastolic', min: 30, max: 200 },
-  { key: 'bp_bpm', min: 20, max: 250 },
-  { key: 'spo2', min: 50, max: 100 },
-  { key: 'oximeter_bpm', min: 20, max: 250 }
-];
+// measured_at sent by the browser (time the first reading was saved) is only trusted inside this window.
+const MEASURED_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const MEASURED_MAX_FUTURE_MS = 5 * 60 * 1000;
+
+// Same limits as the form on the dashboard. They only catch typing mistakes.
+const GLUCOSE_LIMITS = { 'mmol/L': { min: 1, max: 40 }, 'mg/dL': { min: 20, max: 720 } };
 
 class ApiError extends Error {
   constructor(code, status) {
@@ -129,6 +127,19 @@ function checkOrigin(request, url) {
 }
 
 /* ---------- Sessions ---------- */
+async function startSession(env, userId, url) {
+  const now = new Date();
+  const token = randomHex(32);
+  const tokenHash = await sha256Hex(token);
+  const expires = new Date(now.getTime() + SESSION_DAYS * 86400000);
+
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?1').bind(sqlTime(now)),
+    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?1, ?2, ?3)').bind(tokenHash, userId, sqlTime(expires))
+  ]);
+  return cookieHeader(token, expires, url.protocol === 'https:');
+}
+
 async function getSession(request, env) {
   const cookies = request.headers.get('Cookie') || '';
   const match = cookies.match(new RegExp('(?:^|;\\s*)' + COOKIE_NAME + '=([0-9a-f]{64})'));
@@ -148,8 +159,61 @@ async function requireSession(request, env) {
   return session;
 }
 
+/* ---------- Reading validation ---------- */
+function intInRange(value, min, max) {
+  return Number.isInteger(value) && value >= min && value <= max;
+}
+
+function requireObjectOrNull(input) {
+  if (input === null || input === undefined) return null;
+  if (typeof input !== 'object' || Array.isArray(input)) throw new ApiError('invalid_reading', 400);
+  return input;
+}
+
+function parseBpReading(input) {
+  const obj = requireObjectOrNull(input);
+  if (!obj) return null;
+  const { systolic, diastolic, bpm } = obj;
+  if (!intInRange(systolic, 50, 300) || !intInRange(diastolic, 30, 200) || !intInRange(bpm, 20, 250) || systolic <= diastolic) {
+    throw new ApiError('invalid_reading', 400);
+  }
+  return { systolic, diastolic, bpm };
+}
+
+function parseOximeter(input) {
+  const obj = requireObjectOrNull(input);
+  if (!obj) return null;
+  const { spo2, bpm } = obj;
+  if (!intInRange(spo2, 50, 100) || !intInRange(bpm, 20, 250)) throw new ApiError('invalid_reading', 400);
+  return { spo2, bpm };
+}
+
+function parseGlucose(input) {
+  const obj = requireObjectOrNull(input);
+  if (!obj) return null;
+  const { unit } = obj;
+  if (typeof unit !== 'string' || !Object.prototype.hasOwnProperty.call(GLUCOSE_LIMITS, unit)) throw new ApiError('invalid_reading', 400);
+  const limits = GLUCOSE_LIMITS[unit];
+  let value = obj.value;
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new ApiError('invalid_reading', 400);
+  if (unit === 'mmol/L') value = Math.round(value * 10) / 10;
+  else if (!Number.isInteger(value)) throw new ApiError('invalid_reading', 400);
+  if (value < limits.min || value > limits.max) throw new ApiError('invalid_reading', 400);
+  return { value, unit };
+}
+
+function resolveMeasuredAt(value, now) {
+  if (typeof value === 'string') {
+    const t = Date.parse(value);
+    if (!Number.isNaN(t) && t <= now.getTime() + MEASURED_MAX_FUTURE_MS && t >= now.getTime() - MEASURED_MAX_AGE_MS) {
+      return sqlTime(new Date(Math.min(t, now.getTime())));
+    }
+  }
+  return sqlTime(now);
+}
+
 /* ---------- Endpoints ---------- */
-async function signup(request, env) {
+async function signup(request, env, url) {
   requireMethod(request, 'POST');
   const body = await readJson(request);
 
@@ -164,15 +228,19 @@ async function signup(request, env) {
   const salt = randomHex(16);
   const pinHash = await hashPin(pin, salt);
 
+  let result;
   try {
-    await env.DB.prepare(
+    result = await env.DB.prepare(
       'INSERT INTO users (ic, name, pin_hash, pin_salt, birth_date, gender) VALUES (?1, ?2, ?3, ?4, ?5, ?6)'
     ).bind(ic, name, pinHash, salt, info.birthDate, info.gender).run();
   } catch (err) {
     if (String(err && err.message).includes('UNIQUE')) throw new ApiError('already_registered', 409);
     throw err;
   }
-  return json({ ok: true }, 201);
+
+  // New accounts go straight to the user page, so they are logged in right away.
+  const cookie = await startSession(env, result.meta.last_row_id, url);
+  return json({ ok: true, role: 'user' }, 201, { 'Set-Cookie': cookie });
 }
 
 async function login(request, env, url) {
@@ -209,19 +277,9 @@ async function login(request, env, url) {
     throw new ApiError('invalid_credentials', 401);
   }
 
-  const token = randomHex(32);
-  const tokenHash = await sha256Hex(token);
-  const expires = new Date(now.getTime() + SESSION_DAYS * 86400000);
-
-  await env.DB.batch([
-    env.DB.prepare('UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?1').bind(user.id),
-    env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?1').bind(nowText),
-    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?1, ?2, ?3)').bind(tokenHash, user.id, sqlTime(expires))
-  ]);
-
-  return json({ ok: true, role: user.role }, 200, {
-    'Set-Cookie': cookieHeader(token, expires, url.protocol === 'https:')
-  });
+  await env.DB.prepare('UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?1').bind(user.id).run();
+  const cookie = await startSession(env, user.id, url);
+  return json({ ok: true, role: user.role }, 200, { 'Set-Cookie': cookie });
 }
 
 async function logout(request, env, url) {
@@ -239,6 +297,7 @@ async function me(request, env) {
   requireMethod(request, 'GET');
   const user = await requireSession(request, env);
   return json({
+    id: user.id,
     name: user.name,
     ic: user.ic,
     age: ageFrom(user.birth_date),
@@ -247,12 +306,14 @@ async function me(request, env) {
   });
 }
 
+// Every query below filters by the logged-in user's id, so users only ever see their own rows.
 async function listReadings(request, env) {
   requireMethod(request, 'GET');
   const user = await requireSession(request, env);
   const { results } = await env.DB.prepare(
-    'SELECT id, systolic, diastolic, bp_bpm, spo2, oximeter_bpm, note, created_at ' +
-    'FROM readings WHERE user_id = ?1 ORDER BY created_at DESC, id DESC LIMIT 5000'
+    'SELECT id, bp1_systolic, bp1_diastolic, bp1_bpm, bp2_systolic, bp2_diastolic, bp2_bpm, ' +
+    'spo2, oximeter_bpm, glucose_value, glucose_unit, note, measured_at, created_at ' +
+    'FROM readings WHERE user_id = ?1 ORDER BY measured_at DESC, id DESC LIMIT 5000'
   ).bind(user.id).all();
   return json({ readings: results });
 }
@@ -262,13 +323,13 @@ async function addReading(request, env) {
   const user = await requireSession(request, env);
   const body = await readJson(request);
 
-  const values = {};
-  for (const field of READING_FIELDS) {
-    const value = body[field.key];
-    if (!Number.isInteger(value) || value < field.min || value > field.max) throw new ApiError('invalid_reading', 400);
-    values[field.key] = value;
-  }
-  if (values.systolic <= values.diastolic) throw new ApiError('invalid_reading', 400);
+  const bp1 = parseBpReading(body.bp1);
+  const bp2 = parseBpReading(body.bp2);
+  const oximeter = parseOximeter(body.oximeter);
+  const glucose = parseGlucose(body.glucose);
+
+  if (bp2 && !bp1) throw new ApiError('invalid_reading', 400);
+  if (!bp1 && !oximeter && !glucose) throw new ApiError('invalid_reading', 400);
 
   let note = null;
   if (body.note !== undefined && body.note !== null) {
@@ -276,10 +337,22 @@ async function addReading(request, env) {
     note = body.note.trim().slice(0, 100) || null;
   }
 
-  // created_at is filled in by the database (UTC).
+  const measuredAt = resolveMeasuredAt(body.measured_at, new Date());
+
+  // created_at is filled in by the database (UTC) when the row is submitted.
   await env.DB.prepare(
-    'INSERT INTO readings (user_id, systolic, diastolic, bp_bpm, spo2, oximeter_bpm, note) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)'
-  ).bind(user.id, values.systolic, values.diastolic, values.bp_bpm, values.spo2, values.oximeter_bpm, note).run();
+    'INSERT INTO readings (user_id, bp1_systolic, bp1_diastolic, bp1_bpm, bp2_systolic, bp2_diastolic, bp2_bpm, ' +
+    'spo2, oximeter_bpm, glucose_value, glucose_unit, note, measured_at) ' +
+    'VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)'
+  ).bind(
+    user.id,
+    bp1 ? bp1.systolic : null, bp1 ? bp1.diastolic : null, bp1 ? bp1.bpm : null,
+    bp2 ? bp2.systolic : null, bp2 ? bp2.diastolic : null, bp2 ? bp2.bpm : null,
+    oximeter ? oximeter.spo2 : null, oximeter ? oximeter.bpm : null,
+    glucose ? glucose.value : null, glucose ? glucose.unit : null,
+    note,
+    measuredAt
+  ).run();
 
   return json({ ok: true }, 201);
 }
@@ -294,7 +367,7 @@ async function handleApi(request, env, url) {
 
   const route = url.pathname.replace(/\/+$/, '');
   switch (route) {
-    case '/api/signup': return signup(request, env);
+    case '/api/signup': return signup(request, env, url);
     case '/api/login': return login(request, env, url);
     case '/api/logout': return logout(request, env, url);
     case '/api/me': return me(request, env);

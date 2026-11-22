@@ -1,54 +1,91 @@
-# PANTaU — Pemantauan Aktiviti Nadi dan TekAnan dalam Unit
+# PANTaU
 
-Home log for blood pressure (systolic, diastolic, BPM) and finger clip oximeter (SpO₂, pulse) readings.
-Built with plain HTML/CSS/JS and a Cloudflare Worker + D1 database.
+**P**emantauan **A**ktiviti **N**adi dan **T**ek**A**nan dalam **U**nit
 
-## Files
+A web-based personal health vitals monitoring and record management system for tracking blood pressure, pulse oximetry and blood glucose readings.
 
-| File | What it does |
-| --- | --- |
-| `index.html`, `index.js` | Log in / sign up page |
-| `dashboard.html`, `dashboard.js` | Patient dashboard (new reading, latest reading, history, print / PDF) |
-| `offline.html` | Shown when there is no connection |
-| `common.js`, `index.css` | Shared code and styles |
-| `cloudflare_worker.js` | API (`/api/*`) and static page hosting |
-| `schema.sql` | D1 tables: `users`, `sessions`, `readings` |
-| `wrangler.json` | Worker config (D1 binding `DB`, assets binding `ASSETS`) |
-| `.assetsignore` | Keeps the Worker, config and SQL files out of the public pages |
+---
 
-## First-time setup
+## Overview
 
-1. Create the database, then copy the `database_id` it prints into `wrangler.json`:
+PANTaU allows users to log vitals readings alongside contextual notes, keep a timestamped history, and print or export reports for personal or clinical reference. An administrative view for oversight of registered user records is planned.
 
+---
+
+## Core Features
+
+### Authentication & User Profiling
+* **IC Registration:** Captures Name, IC Number, and PIN with duplicate account detection. IC numbers are stored without dashes. A new account goes straight to the user page; an already registered IC is sent to Log In.
+* **Automated Demographic Derivation:** Automatically extracts the user's birth date and gender from the IC number on the backend during sign-up. Age is calculated when displayed.
+* **Role-Based Accounts:** Accounts carry a `user` or `admin` role. The User Dashboard is available now; the Admin Dashboard is planned.
+* **Offline Fallback:** Detects connection loss and serves a dedicated offline screen with a retry button.
+
+### Vitals Logging (User Dashboard)
+* **Multi-Device Input:** The **+ Add Reading** button lets the user choose a device. Several devices can be added to one submission (each device once):
+  * **Oximeter:** `SpO2` and `Oximeter BPM`
+  * **Blood Pressure Monitor:** Reading 1 (`Systolic`, `Diastolic`, `BP BPM`) and an optional Reading 2, taken about 1 minute later
+  * **Blood Glucose Monitor:** glucose level in `mmol/L` or `mg/dL`
+* **1-Minute Countdown:** Starts when Reading 1 is saved. It is a reminder only and never blocks submitting.
+* **Save for Now:** Each device card can keep its reading temporarily in the browser, so the user can wait for the countdown and finish later. Nothing is sent to the database until Submit.
+* **Contextual Notes (Optional):** Choose a preset (*Before Eating*, *After Eating*, *Fasting*, *Sleeping*, *Woke Up Early Morning*, *Lying Down*, *Sitting*, *Relaxing*, *Walking*, *Running*) or type a custom note.
+* **Automatic Timestamping:** The date and time are recorded automatically and shown in Malaysia time (UTC+8).
+
+### History & Reporting
+* **Personal History Log:** Shows every submission, newest first, with date, time, all device readings and the note. A table on computers and cards on phones.
+* **Auto Refresh:** Data refreshes after saving, when returning to the page, every minute, and with a Refresh button.
+* **Print & PDF Export:** A fixed A4 landscape table layout that looks the same on every device.
+
+### Administrative Oversight (Planned)
+* **User Directory:** List registered users with database error handling.
+* **Record Inspection:** View an individual user's vitals history and export it to PDF.
+
+---
+
+## System Architecture
+
+The application follows a 3-level processing flow:
+
+1. **Level 1 — Input:** Network checks, registration/login credentials, vitals form submissions, and report triggers.
+2. **Level 2 — Database Process:** Input validation, duplicate IC verification, birth date/gender derivation, automatic timestamping, and queries.
+3. **Level 3 — Output:** Dynamic UI views, validation alerts, history tables, and print/PDF output.
+
+---
+
+## Tech Stack
+
+* **Frontend:** HTML, CSS, JavaScript
+* **Backend:** Cloudflare Workers
+* **Database:** Cloudflare D1 (SQLite)
+
+---
+
+## Database Schema (Overview)
+
+* **`users`**: Stores `id`, `ic` (unique), `name`, `pin_hash`, `pin_salt`, `birth_date`, `gender`, `role`, and `created_at`.
+* **`readings`**: One row per submission, linked to a user by `user_id`. Stores the blood pressure Reading 1 and Reading 2, oximeter, glucose value and unit, `note`, `measured_at` and `created_at`.
+* **`sessions`**: Stores log-in sessions linked to `users`.
+
+Full definitions are in `schema.sql`.
+
+---
+
+## Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd PANTaU
    ```
-   npx wrangler d1 create pantau-db
+2. Create a D1 database and put its name and `database_id` in `wrangler.json`:
+   ```bash
+   npx wrangler d1 create pantau-database
    ```
-
-2. Create the tables:
-
+3. Create the tables:
+   ```bash
+   npx wrangler d1 execute pantau-database --remote --file=schema.sql
    ```
-   npx wrangler d1 execute pantau-db --local --file=schema.sql     # for local testing
-   npx wrangler d1 execute pantau-db --remote --file=schema.sql    # for the live site
-   ```
-
-3. Test locally, then deploy:
-
-   ```
-   npx wrangler dev
+4. Run locally, then deploy:
+   ```bash
+   npx wrangler dev --remote
    npx wrangler deploy
    ```
-
-## Making an admin (for the admin dashboard later)
-
-Sign up normally first, then:
-
-```
-npx wrangler d1 execute pantau-db --remote --command "UPDATE users SET role='admin' WHERE ic='900101015555'"
-```
-
-## Notes
-
-- IC numbers are saved without dashes. Age is calculated from the IC when shown.
-- Times are saved in UTC and shown in Malaysia time (UTC+8).
-- PINs are stored only as PBKDF2 hashes. After 5 wrong PINs an account is locked for 15 minutes.
-- Because a PIN is only 4–6 digits, keep the site private to people you trust.

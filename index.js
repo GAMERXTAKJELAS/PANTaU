@@ -123,14 +123,19 @@
     P.setBusy(btn, true, 'Creating account…');
     try {
       await P.api.signup(name, ic, pin);
-      form.reset();
-      $('icPreview').textContent = '';
-      showTab('login');
-      $('loginIc').value = ic;
-      $('loginPin').focus();
-      P.showAlert(alertBox, 'success', 'Your account is ready. Please log in with your IC number and PIN.', { title: 'Account created' });
+      location.href = 'dashboard.html'; // the new account is already logged in
+      return;
     } catch (err) {
-      P.showAlert(alertBox, err.code === 'already_registered' ? 'warning' : 'danger', P.errorMessage(err));
+      if (err.code === 'already_registered') {
+        form.reset();
+        $('icPreview').textContent = '';
+        showTab('login');
+        $('loginIc').value = ic;
+        $('loginPin').focus();
+        P.showAlert(alertBox, 'warning', 'You have registered before. Please log in with your IC number and PIN.', { title: 'Already registered' });
+      } else {
+        P.showAlert(alertBox, 'danger', P.errorMessage(err));
+      }
     }
     P.setBusy(btn, false);
   });
