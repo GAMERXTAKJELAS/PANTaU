@@ -3,7 +3,7 @@
   'use strict';
 
   var TIMEZONE = 'Asia/Kuala_Lumpur';
-  var PAGES = { index: 'index.html', dashboard: 'dashboard.html' };
+  var PAGES = { index: 'index.html', account: 'account.html', dashboard: 'dashboard.html' };
 
   var ERRORS = {
     invalid_credentials: 'IC number or PIN is incorrect.',

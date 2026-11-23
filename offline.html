@@ -4,31 +4,43 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PANTaU — Offline</title>
+  <link rel="icon" type="image/svg+xml" href="PANTaU.svg">
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
   <main class="auth">
-    <div class="auth-card center">
-      <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <line x1="1" y1="1" x2="23" y2="23"/>
-        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
-        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
-        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
-        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
-        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-        <line x1="12" y1="20" x2="12.01" y2="20"/>
-      </svg>
-      <div class="brand">
-        <div>
-          <div class="brand__name">PANTaU</div>
-          <p class="tagline">Pemantauan Aktiviti Nadi dan TekAnan dalam Unit</p>
-        </div>
+    <div class="auth-col">
+
+      <div class="auth-top">
+        <button type="button" class="icon-btn" data-theme-toggle aria-label="Switch to light mode" aria-pressed="true">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
       </div>
-      <div class="stack-sm">
-        <h1>You are offline</h1>
-        <p class="hint">PANTaU cannot connect to the internet. Please check your connection, then press Retry.</p>
-        <div id="retryMsg" aria-live="polite" hidden></div>
-        <button type="button" class="btn btn--primary btn--block" id="retryBtn">Retry</button>
+
+      <div class="auth-card center">
+        <svg class="offline-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+          <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+          <line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+        <div class="brand">
+          <img class="brand__logo" src="PANTaU.svg" alt="" width="40" height="40">
+          <div>
+            <div class="brand__name">PANTaU</div>
+          </div>
+        </div>
+        <div class="stack-sm">
+          <h1>You are offline</h1>
+          <p class="hint">PANTaU cannot connect to the internet. Please check your connection, then press Retry.</p>
+          <div id="retryMsg" aria-live="polite" hidden></div>
+          <button type="button" class="btn btn--primary btn--block" id="retryBtn">Retry</button>
+        </div>
       </div>
     </div>
   </main>
@@ -36,7 +48,7 @@
   <script>
     (function () {
       'use strict';
-      var allowed = { index: 'index.html', dashboard: 'dashboard.html' };
+      var allowed = { index: 'index.html', account: 'account.html', dashboard: 'dashboard.html' };
       var from = (new URLSearchParams(location.search).get('from') || '').replace(/\.html$/, '');
       var target = Object.prototype.hasOwnProperty.call(allowed, from) ? allowed[from] : 'index.html';
       var btn = document.getElementById('retryBtn');

@@ -38,7 +38,7 @@
 
   /* ---------- Errors ---------- */
   function handleError(err, container) {
-    if (err && err.status === 401) { location.replace('index.html'); return; }
+    if (err && err.status === 401) { location.replace('account.html'); return; }
     P.showAlert(container || alertBox, 'danger', P.errorMessage(err));
   }
 
@@ -687,7 +687,7 @@
     try {
       me = await P.api.me();
     } catch (err) {
-      if (err.status === 401) { location.replace('index.html'); return; }
+      if (err.status === 401) { location.replace('account.html'); return; }
       handleError(err);
       return;
     }

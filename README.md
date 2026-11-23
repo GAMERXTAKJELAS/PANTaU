@@ -14,7 +14,12 @@ PANTaU allows users to log vitals readings alongside contextual notes, keep a ti
 
 ## Core Features
 
+### Home Page & Theme
+* **Home Page:** `index.html` introduces PANTaU and links to the account page. A signed-in user who opens it goes straight to the dashboard, and logging out returns here.
+* **Light / Dark Theme:** A theme button on every page. The choice is remembered in the browser, and printed reports always stay light.
+
 ### Authentication & User Profiling
+* **Account Page:** `account.html` holds Log In and Sign Up in one page.
 * **IC Registration:** Captures Name, IC Number, and PIN with duplicate account detection. IC numbers are stored without dashes. A new account goes straight to the user page; an already registered IC is sent to Log In.
 * **Automated Demographic Derivation:** Automatically extracts the user's birth date and gender from the IC number on the backend during sign-up. Age is calculated when displayed.
 * **Role-Based Accounts:** Accounts carry a `user` or `admin` role. The User Dashboard is available now; the Admin Dashboard is planned.

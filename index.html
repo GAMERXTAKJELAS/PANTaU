@@ -4,86 +4,111 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PANTaU — Pemantauan Aktiviti Nadi dan TekAnan dalam Unit">
-  <title>PANTaU — Log In</title>
+  <title>PANTaU</title>
+  <link rel="icon" type="image/svg+xml" href="PANTaU.svg">
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="index.css">
 </head>
-<body>
-  <main class="auth">
-    <div class="auth-card">
+<body class="home">
 
-      <div class="brand">
-        <svg class="brand__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>
-          <polyline points="6.5 12 9.5 12 11 9 13 15 14.5 12 17.5 12"/>
-        </svg>
-        <div>
-          <div class="brand__name">PANTaU</div>
-          <p class="tagline">Pemantauan Aktiviti Nadi dan TekAnan dalam Unit</p>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="brand" href="index.html" aria-label="PANTaU home">
+        <img class="brand__logo" src="PANTaU.svg" alt="" width="40" height="40">
+        <span class="brand__name">PANTaU</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Page sections">
+        <a href="#devices">Devices</a>
+        <a href="#how">How it works</a>
+      </nav>
+
+      <div class="site-actions">
+        <button type="button" class="icon-btn" data-theme-toggle aria-label="Switch to light mode" aria-pressed="true">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <a class="btn btn--text" href="account.html">Log In</a>
+        <a class="btn btn--primary" href="account.html#signup">Sign Up</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <span class="badge">Home vitals log</span>
+        <h1>Monitor Your Pulse, Blood Pressure &amp; Glucose <span class="accent">Systematically.</span></h1>
+        <p class="lead"><strong>P</strong>emantauan <strong>A</strong>ktiviti <strong>N</strong>adi dan <strong>T</strong>ek<strong>A</strong>nan dalam <strong>U</strong>nit — Log daily vitals using your MyKad / IC Number and export clean PDF reports anytime.</p>
+        <div class="hero__actions">
+          <a class="btn btn--primary btn--lg" href="account.html#signup">Create New Account</a>
+          <a class="btn btn--outline btn--lg" href="account.html">Log In</a>
         </div>
       </div>
+    </section>
 
-      <div id="authAlert" aria-live="polite"></div>
-
-      <div class="tabs" role="tablist" aria-label="Log in or sign up">
-        <button type="button" class="tab" role="tab" id="tab-login" aria-selected="true" aria-controls="panel-login">Log In</button>
-        <button type="button" class="tab" role="tab" id="tab-signup" aria-selected="false" aria-controls="panel-signup" tabindex="-1">Sign Up</button>
+    <!-- Supported devices -->
+    <section class="section" id="devices">
+      <div class="container">
+        <div class="section__head">
+          <p class="eyebrow">Devices</p>
+          <h2 class="section__title">Supported devices &amp; metrics</h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <h3>Pulse Oximeter</h3>
+            <p>Track oxygen saturation (SpO2 %) and pulse rate (BPM) quickly.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></div>
+            <h3>Blood Pressure Monitor</h3>
+            <p>Record Systolic / Diastolic (mmHg) and Pulse (BPM) with a built-in 1-minute rest timer for an optional second reading.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
+            <h3>Blood Glucose Monitor</h3>
+            <p>Log blood sugar levels defaulting to Malaysia's standard mmol/L (with mg/dL option).</p>
+          </article>
+        </div>
       </div>
+    </section>
 
-      <!-- LOG IN -->
-      <section id="panel-login" role="tabpanel" aria-labelledby="tab-login">
-        <form id="loginForm" class="form" novalidate>
-          <div class="field">
-            <label for="loginIc">IC number</label>
-            <input class="input" id="loginIc" name="ic" type="text" inputmode="numeric" autocomplete="username" maxlength="14" placeholder="12 digits, with or without dashes" aria-describedby="loginIc-error">
-            <p class="field__error" id="loginIc-error" hidden></p>
-          </div>
-          <div class="field">
-            <label for="loginPin">PIN</label>
-            <div class="input-group">
-              <input class="input" id="loginPin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" placeholder="4 to 6 digits" aria-describedby="loginPin-error">
-              <button type="button" class="toggle" data-toggle="loginPin" aria-pressed="false" aria-label="Show PIN">Show</button>
-            </div>
-            <p class="field__error" id="loginPin-error" hidden></p>
-          </div>
-          <button type="submit" class="btn btn--primary btn--block" id="loginBtn">Log In</button>
-        </form>
-      </section>
-
-      <!-- SIGN UP -->
-      <section id="panel-signup" role="tabpanel" aria-labelledby="tab-signup" hidden>
-        <form id="signupForm" class="form" novalidate>
-          <div class="field">
-            <label for="signupName">Full name</label>
-            <input class="input" id="signupName" name="name" type="text" autocomplete="name" maxlength="100" aria-describedby="signupName-error">
-            <p class="field__error" id="signupName-error" hidden></p>
-          </div>
-          <div class="field">
-            <label for="signupIc">IC number</label>
-            <input class="input" id="signupIc" name="ic" type="text" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="12 digits, with or without dashes" aria-describedby="signupIc-error icPreview">
-            <p class="hint" id="icPreview" aria-live="polite"></p>
-            <p class="field__error" id="signupIc-error" hidden></p>
-          </div>
-          <div class="field">
-            <label for="signupPin">PIN</label>
-            <div class="input-group">
-              <input class="input" id="signupPin" name="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" placeholder="4 to 6 digits" aria-describedby="signupPin-error">
-              <button type="button" class="toggle" data-toggle="signupPin signupPin2" aria-pressed="false" aria-label="Show PIN">Show</button>
-            </div>
-            <p class="field__error" id="signupPin-error" hidden></p>
-          </div>
-          <div class="field">
-            <label for="signupPin2">Confirm PIN</label>
-            <input class="input" id="signupPin2" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" aria-describedby="signupPin2-error">
-            <p class="field__error" id="signupPin2-error" hidden></p>
-          </div>
-          <button type="submit" class="btn btn--primary btn--block" id="signupBtn">Create Account</button>
-        </form>
-      </section>
-
-      <p class="foot">Record blood pressure and oximeter readings at home.</p>
-      <noscript><p class="foot">Please turn on JavaScript to use PANTaU.</p></noscript>
-    </div>
+    <!-- How it works -->
+    <section class="section" id="how">
+      <div class="container">
+        <div class="section__head">
+          <p class="eyebrow">How it works</p>
+          <h2 class="section__title">Three simple steps</h2>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <div class="step__num" aria-hidden="true">1</div>
+            <h3>Quick MyKad Setup</h3>
+            <p>Sign up with your Name, IC Number, and PIN — age and gender are calculated automatically.</p>
+          </article>
+          <article class="step">
+            <div class="step__num" aria-hidden="true">2</div>
+            <h3>Flexible Logging &amp; Drafts</h3>
+            <p>Add readings one device at a time via the + button, save drafts temporarily as you measure, and tag daily notes (Before Eating, Relaxing, etc.).</p>
+          </article>
+          <article class="step">
+            <div class="step__num" aria-hidden="true">3</div>
+            <h3>Timestamped History &amp; PDF Export</h3>
+            <p>View automatically dated and timed records and print or download clean PDF reports for clinic visits.</p>
+          </article>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Medical Disclaimer: PANTaU is designed for personal self-monitoring only and does not replace professional medical advice, diagnosis, or treatment.</p>
+      <p>&copy; 2026 PANTaU — Pemantauan Aktiviti Nadi dan TekAnan dalam Unit</p>
+    </div>
+  </footer>
 
   <script src="common.js"></script>
   <script src="index.js"></script>
