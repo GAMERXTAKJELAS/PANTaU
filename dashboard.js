@@ -166,9 +166,14 @@
   function removeDevice(name) {
     var card = devicesBox.querySelector('[data-device="' + name + '"]');
     if (card) card.remove();
-    if (name === 'bp' && draft) {
-      draft.bp1SavedAt = null;
-      draft.bp1Key = null;
+    if (draft) {
+      if (name === 'bp') { draft.bp1SavedAt = null; draft.bp1Key = null; }
+      if (draft.times) {
+        (name === 'bp' ? ['bp1', 'bp2'] : [name]).forEach(function (kind) {
+          draft.times[kind] = null;
+          if (draft.keys) draft.keys[kind] = '';
+        });
+      }
       writeDraft(draft);
     }
     P.clearAlert(formAlert);
@@ -317,6 +322,20 @@
     });
   }
 
+  // A short fingerprint of each reading's values, to tell whether a reading changed after it was saved.
+  function readingKeys() {
+    function join(ids) {
+      var parts = ids.map(function (id) { var el = $(id); return el ? el.value.trim() : ''; });
+      return parts.some(function (p) { return p !== ''; }) ? parts.join('/') : '';
+    }
+    return {
+      bp1: join(['bp1Sys', 'bp1Dia', 'bp1Bpm']),
+      bp2: join(['bp2Sys', 'bp2Dia', 'bp2Bpm']),
+      oximeter: join(['spo2', 'oxiBpm']),
+      glucose: join(['glucoseValue', 'glucoseUnit'])
+    };
+  }
+
   function saveForNow(name) {
     P.clearAlert(formAlert);
     if (!validateDevice(name)) {
@@ -329,12 +348,22 @@
     var d = readDraft() || { v: 1, firstSavedAt: now, bp1SavedAt: null, bp1Key: null };
     d.devices = openDevices();
     d.values = collectValues();
+    d.times = d.times || {};
+    d.keys = d.keys || {};
 
-    if (name === 'bp') {
-      // The timer starts when Reading 1 is saved, and restarts only if Reading 1 changes.
-      var key = [$('bp1Sys').value, $('bp1Dia').value, $('bp1Bpm').value].join('/');
-      if (!d.bp1SavedAt || d.bp1Key !== key) { d.bp1SavedAt = now; d.bp1Key = key; }
-    }
+    // Each reading gets its own time when it is saved, and a new time only if its values change.
+    var current = readingKeys();
+    (name === 'bp' ? ['bp1', 'bp2'] : [name]).forEach(function (kind) {
+      if (!current[kind]) { d.times[kind] = null; d.keys[kind] = ''; return; }
+      if (kind === 'bp1' && !d.times.bp1 && d.bp1SavedAt && d.bp1Key === current.bp1) {
+        d.times.bp1 = d.bp1SavedAt; // draft saved before per-reading times existed
+        d.keys.bp1 = current.bp1;
+      }
+      if (!d.times[kind] || d.keys[kind] !== current[kind]) { d.times[kind] = now; d.keys[kind] = current[kind]; }
+    });
+
+    // The countdown for Reading 2 starts when Reading 1 is saved.
+    if (name === 'bp') { d.bp1SavedAt = d.times.bp1; d.bp1Key = d.keys.bp1; }
 
     if (!writeDraft(d)) {
       P.showAlert(formAlert, 'danger', 'This browser could not save the reading. You can still press Submit.', { title: 'Not saved' });
@@ -412,7 +441,7 @@
       return;
     }
 
-    var payload = { bp1: null, bp2: null, oximeter: null, glucose: null, note: null, measured_at: null };
+    var payload = { bp1: null, bp2: null, oximeter: null, glucose: null, note: null };
     var ok = true;
 
     names.forEach(function (name) {
@@ -439,8 +468,20 @@
       return;
     }
 
-    // Time the first reading was saved. The server only trusts it if it is recent.
-    if (draft) payload.measured_at = draft.firstSavedAt;
+    // The time each reading was saved with "Save for now".
+    // A reading that was never saved, or that changed after saving, gets the time of this Submit.
+    var nowIso = new Date().toISOString();
+    var current = readingKeys();
+    var timeFor = function (kind) {
+      if (!current[kind]) return null;
+      if (draft && !draft.times) return kind === 'bp2' ? nowIso : draft.firstSavedAt; // draft from before per-reading times
+      if (draft && draft.times[kind] && draft.keys && draft.keys[kind] === current[kind]) return draft.times[kind];
+      return nowIso;
+    };
+    if (payload.bp1) payload.bp1.at = timeFor('bp1');
+    if (payload.bp2) payload.bp2.at = timeFor('bp2');
+    if (payload.oximeter) payload.oximeter.at = timeFor('oximeter');
+    if (payload.glucose) payload.glucose.at = timeFor('glucose');
 
     var btn = $('saveBtn');
     P.setBusy(btn, true, 'Submitting…');
@@ -464,9 +505,17 @@
     return d ? { date: P.formatDate(d), time: P.formatTime(d) } : { date: '—', time: '—' };
   }
 
-  function whenText(r) {
-    var w = whenParts(r);
-    return w.date + ', ' + w.time + (r.note ? ' · ' + r.note : '');
+  // Date and time of one reading (field is its own time column). Older entries fall back to the entry time.
+  function whenText(r, field) {
+    var d = P.toDate((field && r[field]) || r.measured_at || r.created_at);
+    var text = d ? P.formatDate(d) + ', ' + P.formatTime(d) : '—';
+    return text + (r.note ? ' · ' + r.note : '');
+  }
+
+  // Time (no seconds) a single reading was saved. Reading 2 of older entries has no time, so it shows none.
+  function readingTime(r, field, allowFallback) {
+    var d = P.toDate(r[field] || (allowFallback ? (r.measured_at || r.created_at) : null));
+    return d ? P.formatTime(d) : '';
   }
 
   function bpText(sys, dia, bpm) {
@@ -503,25 +552,34 @@
     $('latBpSub').textContent = bp ? 'Reading 1 · BPM ' + bp.bp1_bpm : '';
     var hasSecond = !!bp && bp.bp2_systolic != null;
     $('latBpSub2').hidden = !hasSecond;
-    $('latBpSub2').textContent = hasSecond ? 'Reading 2 · ' + bp.bp2_systolic + '/' + bp.bp2_diastolic + ' · BPM ' + bp.bp2_bpm : '';
-    $('latBpTime').textContent = bp ? whenText(bp) : 'No reading yet';
+    $('latBpSub2').textContent = hasSecond
+      ? 'Reading 2 · ' + bp.bp2_systolic + '/' + bp.bp2_diastolic + ' · BPM ' + bp.bp2_bpm + (readingTime(bp, 'bp2_at', false) ? ' · ' + readingTime(bp, 'bp2_at', false) : '')
+      : '';
+    $('latBpTime').textContent = bp ? whenText(bp, 'bp1_at') : 'No reading yet';
 
     var ox = findLatest(function (r) { return r.spo2 != null; });
     $('latSpo2').textContent = ox ? ox.spo2 : '—';
     $('latSpo2Sub').textContent = ox ? 'Oximeter BPM ' + ox.oximeter_bpm : '';
-    $('latSpo2Time').textContent = ox ? whenText(ox) : 'No reading yet';
+    $('latSpo2Time').textContent = ox ? whenText(ox, 'oximeter_at') : 'No reading yet';
 
     var glu = findLatest(function (r) { return r.glucose_value != null; });
     $('latGlu').textContent = glu ? (glu.glucose_unit === 'mmol/L' ? Number(glu.glucose_value).toFixed(1) : String(Math.round(glu.glucose_value))) : '—';
     $('latGluUnit').textContent = glu ? glu.glucose_unit : '';
-    $('latGluTime').textContent = glu ? whenText(glu) : 'No reading yet';
+    $('latGluTime').textContent = glu ? whenText(glu, 'glucose_at') : 'No reading yet';
   }
 
   /* ---------- History (table and phone cards) ---------- */
-  function cell(text, className) {
+  // time (optional) is the time of that single reading, shown in small text under the value.
+  function cell(text, className, time) {
     var td = document.createElement('td');
     if (className) td.className = className;
     td.textContent = text;
+    if (time) {
+      var small = document.createElement('small');
+      small.className = 'cell-time';
+      small.textContent = time;
+      td.append(small);
+    }
     return td;
   }
 
@@ -532,11 +590,11 @@
       cell(String(number), 'num'),
       cell(w.date),
       cell(w.time),
-      cell(bpText(r.bp1_systolic, r.bp1_diastolic, r.bp1_bpm), 'num'),
-      cell(bpText(r.bp2_systolic, r.bp2_diastolic, r.bp2_bpm), 'num'),
-      cell(r.spo2 == null ? '—' : String(r.spo2), 'num'),
-      cell(r.oximeter_bpm == null ? '—' : String(r.oximeter_bpm), 'num'),
-      cell(glucoseText(r), 'num')
+      cell(bpText(r.bp1_systolic, r.bp1_diastolic, r.bp1_bpm), 'num', r.bp1_systolic != null ? readingTime(r, 'bp1_at', true) : ''),
+      cell(bpText(r.bp2_systolic, r.bp2_diastolic, r.bp2_bpm), 'num', r.bp2_systolic != null ? readingTime(r, 'bp2_at', false) : ''),
+      cell(r.spo2 == null ? '—' : String(r.spo2), 'num', r.spo2 != null ? readingTime(r, 'oximeter_at', true) : ''),
+      cell(r.oximeter_bpm == null ? '—' : String(r.oximeter_bpm), 'num', r.oximeter_bpm != null ? readingTime(r, 'oximeter_at', true) : ''),
+      cell(glucoseText(r), 'num', r.glucose_value != null ? readingTime(r, 'glucose_at', true) : '')
     );
 
     var noteTd = document.createElement('td');
@@ -567,19 +625,25 @@
     head.append(when, no);
 
     var dl = document.createElement('dl');
-    function add(label, value) {
+    function add(label, value, time) {
       var wrap = document.createElement('div');
       var dt = document.createElement('dt');
       dt.textContent = label;
       var dd = document.createElement('dd');
       dd.textContent = value;
+      if (time) {
+        var small = document.createElement('span');
+        small.className = 'cell-time';
+        small.textContent = time;
+        dd.append(small);
+      }
       wrap.append(dt, dd);
       dl.append(wrap);
     }
-    if (r.bp1_systolic != null) add('BP Reading 1', r.bp1_systolic + '/' + r.bp1_diastolic + ' mmHg · BPM ' + r.bp1_bpm);
-    if (r.bp2_systolic != null) add('BP Reading 2', r.bp2_systolic + '/' + r.bp2_diastolic + ' mmHg · BPM ' + r.bp2_bpm);
-    if (r.spo2 != null) add('Oximeter', 'SpO₂ ' + r.spo2 + '% · BPM ' + r.oximeter_bpm);
-    if (r.glucose_value != null) add('Glucose', glucoseText(r));
+    if (r.bp1_systolic != null) add('BP Reading 1', r.bp1_systolic + '/' + r.bp1_diastolic + ' mmHg · BPM ' + r.bp1_bpm, readingTime(r, 'bp1_at', true));
+    if (r.bp2_systolic != null) add('BP Reading 2', r.bp2_systolic + '/' + r.bp2_diastolic + ' mmHg · BPM ' + r.bp2_bpm, readingTime(r, 'bp2_at', false));
+    if (r.spo2 != null) add('Oximeter', 'SpO₂ ' + r.spo2 + '% · BPM ' + r.oximeter_bpm, readingTime(r, 'oximeter_at', true));
+    if (r.glucose_value != null) add('Glucose', glucoseText(r), readingTime(r, 'glucose_at', true));
 
     article.append(head, dl);
     if (r.note) {

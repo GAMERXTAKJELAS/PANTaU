@@ -35,6 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 --   Blood glucose monitor:  value + unit
 -- measured_at = when the first reading was taken/saved (shown on the website)
 -- created_at  = when the row was submitted to the database
+-- bp1_at, bp2_at, oximeter_at, glucose_at = when each individual reading was saved
 CREATE TABLE IF NOT EXISTS readings (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -56,6 +57,11 @@ CREATE TABLE IF NOT EXISTS readings (
   measured_at   TEXT    NOT NULL DEFAULT (datetime('now')),
   created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
 
+  bp1_at        TEXT,
+  bp2_at        TEXT,
+  oximeter_at   TEXT,
+  glucose_at    TEXT,
+
   CHECK ((bp1_systolic IS NULL) = (bp1_diastolic IS NULL) AND (bp1_systolic IS NULL) = (bp1_bpm IS NULL)),
   CHECK ((bp2_systolic IS NULL) = (bp2_diastolic IS NULL) AND (bp2_systolic IS NULL) = (bp2_bpm IS NULL)),
   CHECK (bp2_systolic IS NULL OR bp1_systolic IS NOT NULL),
@@ -68,3 +74,13 @@ CREATE TABLE IF NOT EXISTS readings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_readings_user_time ON readings(user_id, measured_at DESC);
+
+-- UPGRADE for a database created before the per-reading time columns existed (keeps all data).
+-- Run these once in the D1 console, one line at a time:
+--   ALTER TABLE readings ADD COLUMN bp1_at TEXT;
+--   ALTER TABLE readings ADD COLUMN bp2_at TEXT;
+--   ALTER TABLE readings ADD COLUMN oximeter_at TEXT;
+--   ALTER TABLE readings ADD COLUMN glucose_at TEXT;
+--   UPDATE readings SET bp1_at = measured_at WHERE bp1_systolic IS NOT NULL AND bp1_at IS NULL;
+--   UPDATE readings SET oximeter_at = measured_at WHERE spo2 IS NOT NULL AND oximeter_at IS NULL;
+--   UPDATE readings SET glucose_at = measured_at WHERE glucose_value IS NOT NULL AND glucose_at IS NULL;

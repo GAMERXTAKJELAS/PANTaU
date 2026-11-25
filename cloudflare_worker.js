@@ -177,7 +177,7 @@ function parseBpReading(input) {
   if (!intInRange(systolic, 50, 300) || !intInRange(diastolic, 30, 200) || !intInRange(bpm, 20, 250) || systolic <= diastolic) {
     throw new ApiError('invalid_reading', 400);
   }
-  return { systolic, diastolic, bpm };
+  return { systolic, diastolic, bpm, at: obj.at };
 }
 
 function parseOximeter(input) {
@@ -185,7 +185,7 @@ function parseOximeter(input) {
   if (!obj) return null;
   const { spo2, bpm } = obj;
   if (!intInRange(spo2, 50, 100) || !intInRange(bpm, 20, 250)) throw new ApiError('invalid_reading', 400);
-  return { spo2, bpm };
+  return { spo2, bpm, at: obj.at };
 }
 
 function parseGlucose(input) {
@@ -199,7 +199,7 @@ function parseGlucose(input) {
   if (unit === 'mmol/L') value = Math.round(value * 10) / 10;
   else if (!Number.isInteger(value)) throw new ApiError('invalid_reading', 400);
   if (value < limits.min || value > limits.max) throw new ApiError('invalid_reading', 400);
-  return { value, unit };
+  return { value, unit, at: obj.at };
 }
 
 function resolveMeasuredAt(value, now) {
@@ -210,6 +210,17 @@ function resolveMeasuredAt(value, now) {
     }
   }
   return sqlTime(now);
+}
+
+// Time a single reading was saved (sent by the browser). It is only trusted when it is recent; otherwise the fallback is used.
+function resolveReadingTime(value, now, fallback) {
+  if (typeof value === 'string') {
+    const t = Date.parse(value);
+    if (!Number.isNaN(t) && t <= now.getTime() + MEASURED_MAX_FUTURE_MS && t >= now.getTime() - MEASURED_MAX_AGE_MS) {
+      return sqlTime(new Date(Math.min(t, now.getTime())));
+    }
+  }
+  return fallback;
 }
 
 /* ---------- Endpoints ---------- */
@@ -312,7 +323,8 @@ async function listReadings(request, env) {
   const user = await requireSession(request, env);
   const { results } = await env.DB.prepare(
     'SELECT id, bp1_systolic, bp1_diastolic, bp1_bpm, bp2_systolic, bp2_diastolic, bp2_bpm, ' +
-    'spo2, oximeter_bpm, glucose_value, glucose_unit, note, measured_at, created_at ' +
+    'spo2, oximeter_bpm, glucose_value, glucose_unit, note, measured_at, created_at, ' +
+    'bp1_at, bp2_at, oximeter_at, glucose_at ' +
     'FROM readings WHERE user_id = ?1 ORDER BY measured_at DESC, id DESC LIMIT 5000'
   ).bind(user.id).all();
   return json({ readings: results });
@@ -337,13 +349,23 @@ async function addReading(request, env) {
     note = body.note.trim().slice(0, 100) || null;
   }
 
-  const measuredAt = resolveMeasuredAt(body.measured_at, new Date());
+  // Each reading carries its own time (when it was saved on the dashboard).
+  // A reading without a valid time gets the time of the entry (or of submit for Reading 2).
+  const now = new Date();
+  const fallbackTime = resolveMeasuredAt(body.measured_at, now);
+  const bp1At = bp1 ? resolveReadingTime(bp1.at, now, fallbackTime) : null;
+  const bp2At = bp2 ? resolveReadingTime(bp2.at, now, sqlTime(now)) : null;
+  const oximeterAt = oximeter ? resolveReadingTime(oximeter.at, now, fallbackTime) : null;
+  const glucoseAt = glucose ? resolveReadingTime(glucose.at, now, fallbackTime) : null;
+
+  // The entry time (shown as Date / Time) is the earliest reading time.
+  const measuredAt = [bp1At, bp2At, oximeterAt, glucoseAt].filter(Boolean).sort()[0];
 
   // created_at is filled in by the database (UTC) when the row is submitted.
   await env.DB.prepare(
     'INSERT INTO readings (user_id, bp1_systolic, bp1_diastolic, bp1_bpm, bp2_systolic, bp2_diastolic, bp2_bpm, ' +
-    'spo2, oximeter_bpm, glucose_value, glucose_unit, note, measured_at) ' +
-    'VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)'
+    'spo2, oximeter_bpm, glucose_value, glucose_unit, note, measured_at, bp1_at, bp2_at, oximeter_at, glucose_at) ' +
+    'VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)'
   ).bind(
     user.id,
     bp1 ? bp1.systolic : null, bp1 ? bp1.diastolic : null, bp1 ? bp1.bpm : null,
@@ -351,7 +373,8 @@ async function addReading(request, env) {
     oximeter ? oximeter.spo2 : null, oximeter ? oximeter.bpm : null,
     glucose ? glucose.value : null, glucose ? glucose.unit : null,
     note,
-    measuredAt
+    measuredAt,
+    bp1At, bp2At, oximeterAt, glucoseAt
   ).run();
 
   return json({ ok: true }, 201);

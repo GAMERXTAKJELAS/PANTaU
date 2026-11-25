@@ -392,6 +392,7 @@ a { color: var(--link); }
 .entry-card dd { font-weight: 700; }
 .entry-card .tag { margin-top: 0.6rem; }
 th small { display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.cell-time { display: block; margin-top: 0.1rem; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
 
 /* ---------- Table ---------- */
 .table-wrap { overflow-x: auto; background: var(--cffy-theme-surface-a0); border: 1px solid var(--cffy-theme-surface-a30); border-radius: 12px; }

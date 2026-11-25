@@ -33,7 +33,7 @@ PANTaU allows users to log vitals readings alongside contextual notes, keep a ti
 * **1-Minute Countdown:** Starts when Reading 1 is saved. It is a reminder only and never blocks submitting.
 * **Save for Now:** Each device card can keep its reading temporarily in the browser, so the user can wait for the countdown and finish later. Nothing is sent to the database until Submit.
 * **Contextual Notes (Optional):** Choose a preset (*Before Eating*, *After Eating*, *Fasting*, *Sleeping*, *Woke Up Early Morning*, *Lying Down*, *Sitting*, *Relaxing*, *Walking*, *Running*) or type a custom note.
-* **Automatic Timestamping:** The date and time are recorded automatically and shown in Malaysia time (UTC+8).
+* **Automatic Timestamping:** Every reading is time-stamped automatically (when it is saved for now, or when submitted) and shown in Malaysia time (UTC+8).
 
 ### History & Reporting
 * **Personal History Log:** Shows every submission, newest first, with date, time, all device readings and the note. A table on computers and cards on phones.
@@ -67,7 +67,7 @@ The application follows a 3-level processing flow:
 ## Database Schema (Overview)
 
 * **`users`**: Stores `id`, `ic` (unique), `name`, `pin_hash`, `pin_salt`, `birth_date`, `gender`, `role`, and `created_at`.
-* **`readings`**: One row per submission, linked to a user by `user_id`. Stores the blood pressure Reading 1 and Reading 2, oximeter, glucose value and unit, `note`, `measured_at` and `created_at`.
+* **`readings`**: One row per submission, linked to a user by `user_id`. Stores the blood pressure Reading 1 and Reading 2, oximeter, glucose value and unit, `note`, a time for each reading (`bp1_at`, `bp2_at`, `oximeter_at`, `glucose_at`), `measured_at` and `created_at`.
 * **`sessions`**: Stores log-in sessions linked to `users`.
 
 Full definitions are in `schema.sql`.
